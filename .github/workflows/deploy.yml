@@ -56,31 +56,36 @@ jobs:
           --allow-unauthenticated
 
     # --- Déployer le site statique sur Cloud Storage ---
-          # gsutil -m cp ./tp-serverless/index.html ./tp-serverless/app.js gs://$STATIC_BUCKET
-
     - name: Deploy static site
       run: |
         echo "Syncing static site to bucket..."
         gsutil -m rsync -r ./tp-serverless/ gs://$STATIC_BUCKET
         echo "Site deployed!"
+
     # --- Génération automatique d'API YAML depuis main.py ---
     - name: Generate API YAML from Flask app
       run: |
         cd tp-serverless
         python3 generate_api_yaml.py
 
+    # --- Créer un nom unique pour l'API config ---
+    - name: Set API config name
+      id: vars
+      run: |
+        echo "API_CONFIG_NAME=flask-api-gateway-config-${GITHUB_SHA::7}" >> $GITHUB_ENV
+
     # --- Déployer l'API Gateway ---
     - name: Deploy API Gateway
       run: |
         echo "Creating API config..."
-        gcloud api-gateway api-configs create flask-api-gateway-config \
-          --api=flask-api-gateway \
+        gcloud api-gateway api-configs create $API_CONFIG_NAME \
+          --api=$API_NAME \
           --openapi-spec=./tp-serverless/api.yaml \
           --project=$GCP_PROJECT \
           --quiet || echo "API config already exists, updating..."
         echo "Updating gateway..."
         gcloud api-gateway gateways update $GATEWAY_NAME \
-          --api=flask-api-gateway \
-          --api-config=${API_NAME}-config \
+          --api=$API_NAME \
+          --api-config=$API_CONFIG_NAME \
           --project=$GCP_PROJECT \
           --location=$GCP_REGION
