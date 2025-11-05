@@ -32,6 +32,12 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT }}
         version: 'latest'
 
+    # --- Authentifier Docker à GCP ---
+    - name: Configure Docker auth for GCP
+      run: |
+        gcloud auth configure-docker gcr.io --quiet
+        gcloud auth configure-docker $GCP_REGION-docker.pkg.dev --quiet || true
+
     # --- Build et push l'image Docker de l'API ---
     - name: Build and push Docker image
       run: |
