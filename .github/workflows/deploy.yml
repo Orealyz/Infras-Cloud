@@ -54,19 +54,7 @@ jobs:
           --platform managed \
           --region $GCP_REGION \
           --allow-unauthenticated
-    - name: Install gcloud beta components
-      run: |
-        gcloud components install beta --quiet
-
-    - name: Allow public access to Cloud Run
-      run: |
-        gcloud beta run services add-iam-policy-binding $API_NAME \
-          --member="allUsers" \
-          --role="roles/run.invoker" \
-          --region=$GCP_REGION \
-          --platform=managed
-
-
+          
     # --- Déployer le site statique sur Cloud Storage ---
     - name: Deploy static site
       run: |
