@@ -53,7 +53,7 @@ jobs:
     - name: Deploy static site
       run: |
         echo "Syncing static site to bucket..."
-        gsutil -m rsync -r ./tp1/site gs://$STATIC_BUCKET
+        gsutil -m rsync -r ./tp-serverless/site gs://$STATIC_BUCKET
         echo "Site deployed!"
 
     # --- Déployer l'API Gateway ---
@@ -62,7 +62,7 @@ jobs:
         echo "Creating API config..."
         gcloud api-gateway api-configs create ${API_NAME}-config \
           --api=$API_NAME \
-          --openapi-spec=./tp1/api.yaml \
+          --openapi-spec=./tp-serverless/api.yaml \
           --project=$GCP_PROJECT \
           --quiet || echo "API config already exists, updating..."
         echo "Updating gateway..."
