@@ -36,7 +36,7 @@ jobs:
     - name: Build and push Docker image
       run: |
         echo "Building Docker image..."
-        docker build -t gcr.io/$GCP_PROJECT/$API_NAME:latest ./tp1/api
+        docker build -t gcr.io/$GCP_PROJECT/$API_NAME:latest ./tp-serverless/api
         echo "Pushing Docker image..."
         docker push gcr.io/$GCP_PROJECT/$API_NAME:latest
 
