@@ -59,7 +59,7 @@ jobs:
     - name: Deploy static site
       run: |
         echo "Syncing static site to bucket..."
-        gsutil cp index.html app.js gs://$STATIC_BUCKET
+        gsutil -m cp ./tp-serverless/index.html ./tp-serverless/app.js gs://$STATIC_BUCKET
         echo "Site deployed!"
 
     # --- Déployer l'API Gateway ---
