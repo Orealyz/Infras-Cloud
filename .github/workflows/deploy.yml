@@ -41,9 +41,7 @@ jobs:
     # --- Build et push l'image Docker de l'API ---
     - name: Build and push Docker image
       run: |
-        echo "Building Docker image..."
         docker build -t gcr.io/$GCP_PROJECT/$API_NAME:latest ./tp-serverless/
-        echo "Pushing Docker image..."
         docker push gcr.io/$GCP_PROJECT/$API_NAME:latest
 
     # --- Déployer l'API sur Cloud Run ---
@@ -58,9 +56,7 @@ jobs:
     # --- Déployer le site statique sur Cloud Storage ---
     - name: Deploy static site
       run: |
-        echo "Syncing static site to bucket..."
         gsutil -m rsync -r ./tp-serverless/ gs://$STATIC_BUCKET
-        echo "Site deployed!"
 
     # --- Génération automatique d'API YAML depuis main.py ---
     - name: Generate API YAML from Flask app
@@ -68,24 +64,22 @@ jobs:
         cd tp-serverless
         python3 generate_api_yaml.py
 
-    # --- Créer un nom unique pour l'API config ---
-    - name: Set API config name
-      id: vars
-      run: |
-        echo "API_CONFIG_NAME=flask-api-gateway-config-${GITHUB_SHA::7}" >> $GITHUB_ENV
-
-    # --- Déployer l'API Gateway ---
+    # --- Déployer l'API Gateway avec un nom unique de config ---
     - name: Deploy API Gateway
       run: |
-        echo "Creating API config..."
-        gcloud api-gateway api-configs create $API_CONFIG_NAME \
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        CONFIG_NAME="flask-api-gateway-config-${COMMIT_HASH}"
+
+        echo "Creating new API config: $CONFIG_NAME"
+        gcloud api-gateway api-configs create $CONFIG_NAME \
           --api=$API_NAME \
           --openapi-spec=./tp-serverless/api.yaml \
           --project=$GCP_PROJECT \
-          --quiet || echo "API config already exists, updating..."
-        echo "Updating gateway..."
+          --quiet || echo "Config $CONFIG_NAME already exists, skipping creation"
+
+        echo "Updating gateway $GATEWAY_NAME to use $CONFIG_NAME"
         gcloud api-gateway gateways update $GATEWAY_NAME \
           --api=$API_NAME \
-          --api-config=$API_CONFIG_NAME \
+          --api-config=$CONFIG_NAME \
           --project=$GCP_PROJECT \
           --location=$GCP_REGION
