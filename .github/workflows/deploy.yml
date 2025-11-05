@@ -63,6 +63,11 @@ jobs:
         echo "Syncing static site to bucket..."
         gsutil -m rsync -r ./tp-serverless/ gs://$STATIC_BUCKET
         echo "Site deployed!"
+    # --- Génération automatique d'API YAML depuis main.py ---
+    - name: Generate API YAML from Flask app
+      run: |
+        cd tp-serverless
+        python3 generate_api_yaml.py
 
     # --- Déployer l'API Gateway ---
     - name: Deploy API Gateway

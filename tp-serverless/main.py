@@ -17,5 +17,18 @@ def hello():
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return response
 
+# --- Nouvelle route de test ---
+@app.route("/test", methods=["GET", "OPTIONS"])
+def test_route():
+    if request.method == "OPTIONS":
+        response = make_response("", 204)
+    else:
+        response = make_response(jsonify({"message": "Test route working!"}))
+    
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
