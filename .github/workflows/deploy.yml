@@ -56,10 +56,12 @@ jobs:
           --allow-unauthenticated
 
     # --- Déployer le site statique sur Cloud Storage ---
+          # gsutil -m cp ./tp-serverless/index.html ./tp-serverless/app.js gs://$STATIC_BUCKET
+
     - name: Deploy static site
       run: |
         echo "Syncing static site to bucket..."
-        gsutil -m cp ./tp-serverless/index.html ./tp-serverless/app.js gs://$STATIC_BUCKET
+        gsutil -m rsync -r ./tp-serverless/ gs://$STATIC_BUCKET
         echo "Site deployed!"
 
     # --- Déployer l'API Gateway ---
