@@ -66,14 +66,14 @@ jobs:
     - name: Deploy API Gateway
       run: |
         echo "Creating API config..."
-        gcloud api-gateway api-configs create ${API_NAME}-config \
-          --api=$API_NAME \
+        gcloud api-gateway api-configs create flask-api-gateway-config \
+          --api=flask-api-gateway \
           --openapi-spec=./tp-serverless/api.yaml \
           --project=$GCP_PROJECT \
           --quiet || echo "API config already exists, updating..."
         echo "Updating gateway..."
         gcloud api-gateway gateways update $GATEWAY_NAME \
-          --api=$API_NAME \
+          --api=flask-api-gateway \
           --api-config=${API_NAME}-config \
           --project=$GCP_PROJECT \
           --location=$GCP_REGION
