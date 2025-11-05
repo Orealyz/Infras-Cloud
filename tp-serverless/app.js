@@ -1,5 +1,5 @@
 document.getElementById('helloBtn').addEventListener('click', async () => {
-    const res = await fetch('https://flask-api-gateway-6jq682pn.ew.gateway.dev/hello');
+    const res = await fetch('/api/hello');
     const data = await res.json();
     document.getElementById('response').innerText = data.message;
 });

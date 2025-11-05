@@ -175,6 +175,12 @@ Network:
 # Étape 4 — Distribuer le site via un CDN
 
 1. Créer le backend pour le site statique (bucket GCS + CDN)
+Réservé une IP
+```
+gcloud compute addresses create lb-serverless-ip --global
+gcloud compute addresses describe lb-serverless-ip --global
+
+```
 ```
 gcloud compute backend-buckets create tp-serverless-backend \
     --gcs-bucket-name=tp-serverless-site \
@@ -186,9 +192,9 @@ gcloud compute backend-buckets create tp-serverless-backend \
 
 gcloud compute network-endpoint-groups create api-neg \
     --region=europe-west1 \
-    --network-endpoint-type=serverless \
-    --cloud-run-service=flask-api \
-    --cloud-run-tag=latest
+    --network-endpoint-type=SERVERLESS \
+    --cloud-run-service=tp-serverless-api
+
 ```
 
 3. Créer le backend service pour l’API
@@ -203,6 +209,14 @@ gcloud compute backend-services create api-backend \
 Ajouter le NEG de l’API au backend service :
 
 ```
+gcloud compute url-maps create lb-serverless-map \
+    --default-backend-bucket=tp-serverless-backend
+gcloud compute url-maps add-path-matcher lb-serverless-map \
+    --default-backend-bucket=tp-serverless-backend \
+    --path-matcher-name=static-matcher \
+    --path-rules="/hello=api-backend"
+```
+```
 gcloud compute backend-services add-backend api-backend \
     --global \
     --network-endpoint-group=api-neg \
@@ -211,46 +225,64 @@ gcloud compute backend-services add-backend api-backend \
 
 Configurer l’en-tête Host pour rediriger vers ton Cloud Run / API Gateway :
 
-```
-gcloud compute backend-services update api-backend \
-    --global \
-    --custom-request-header="Host: flask-api-gateway-6jq682pn.ew.gateway.dev"
-```
-
 4. Configurer le Load Balancer (URL Map)
 
 Modifier le url-map pour router /hello vers le backend API et le reste vers le bucket :
+
 ```
-gcloud compute url-maps edit lb-serverless-map --global
-
-
-Contenu du fichier édité :
-
+gcloud compute url-maps create lb-serverless-map \
+    --default-backend-bucket=tp-serverless-backend
+    
+gcloud compute url-maps describe lb-serverless-map
+                                    
+creationTimestamp: '2025-11-04T04:47:28.560-08:00'
 defaultService: https://www.googleapis.com/compute/v1/projects/bold-result-477110-b6/global/backendBuckets/tp-serverless-backend
+fingerprint: 5ymXI4yXKTI=
 hostRules:
 - hosts:
   - '*'
   pathMatcher: api-matcher
+id: '5087517704406190863'
+kind: compute#urlMap
+name: lb-serverless-map
 pathMatchers:
-- name: api-matcher
-  defaultService: https://www.googleapis.com/compute/v1/projects/bold-result-477110-b6/global/backendBuckets/tp-serverless-backend
+- defaultService: https://www.googleapis.com/compute/v1/projects/bold-result-477110-b6/global/backendBuckets/tp-serverless-backend
+  name: api-matcher
   pathRules:
   - paths:
-    - /hello
+    - /api/*
+    routeAction:
+      urlRewrite:
+        hostRewrite: flask-api-gateway-6jq682pn.ew.gateway.dev
+        pathPrefixRewrite: /
     service: https://www.googleapis.com/compute/v1/projects/bold-result-477110-b6/global/backendServices/api-backend
+selfLink: https://www.googleapis.com/compute/v1/projects/bold-result-477110-b6/global/urlMaps/lb-serverless-map
+
+```
+
+```
+gcloud compute url-maps describe lb-serverless-map
 ```
 
 5. Vérifier le Load Balancer
 
 Récupérer l’IP du LB et tester :
-```
-LB_IP=$(gcloud compute forwarding-rules list --filter="name=lb-serverless-http-rule" --format="value(IP_ADDRESS)")
-DOMAIN="$LB_IP.nip.io"
-```
 
 # Tester le site
+
 ```
-curl -H "Host: $DOMAIN" http://$LB_IP/
+gcloud compute target-http-proxies create lb-serverless-http-proxy \
+    --url-map=lb-serverless-map
+
+gcloud compute forwarding-rules create lb-serverless-http-rule \
+    --global \
+    --target-http-proxy=lb-serverless-http-proxy \
+    --ports=80 \
+    --address=lb-serverless-ip
+```
+
+```
+curl http://35.186.208.46/
 <!DOCTYPE html>
 <html>
 <head>
@@ -270,21 +302,53 @@ curl -H "Host: $DOMAIN" http://$LB_IP/
 # Tester l'API
 
 ```
-curl -H "Host: $DOMAIN" http://$LB_IP/hello
+curl http://35.186.208.46/hello
 {"message":"Hello from Cloud Run!"}
 ```
-
-HTTPS:
-
+# Passage en mode HTTPS:
 ```
 gcloud compute ssl-certificates create lb-serverless-ssl \
-    --domains="$LB_IP.nip.io" \
+    --domains="orealyz.fr" \
+    --description="Certificat SSL géré pour TP Serverless" \
+    --global
+```
+```
+gcloud compute target-https-proxies create lb-serverless-https-proxy \
+    --url-map=lb-serverless-map \
+    --ssl-certificates=lb-serverless-ssl \
+    --global
+```
+
+```
+gcloud compute forwarding-rules create lb-serverless-https-rule \
     --global \
-    --description="Certificat SSL géré pour TP Serverless"
-Created [https://www.googleapis.com/compute/v1/projects/bold-result-477110-b6/global/sslCertificates/lb-serverless-ssl].
-NAME               TYPE     CREATION_TIMESTAMP             EXPIRE_TIME  REGION  MANAGED_STATUS
-lb-serverless-ssl  MANAGED  2025-11-04T06:27:35.505-08:00                       PROVISIONING
-    34.95.98.124.nip.io: PROVISIONING
+    --target-https-proxy=lb-serverless-https-proxy \
+    --ports=443 \
+    --address=lb-serverless-ip
+
+```
+
+Firewall:
+```
+gcloud compute firewall-rules create allow-http \
+    --network default \
+    --action ALLOW \
+    --direction INGRESS \
+    --priority 1000 \
+    --rules tcp:80 \
+    --target-tags http-server
+gcloud compute firewall-rules create allow-https \
+    --network default \
+    --action ALLOW \
+    --direction INGRESS \
+    --priority 1000 \
+    --rules tcp:443 \
+    --target-tags https-server
+```
+
+Vérification du certificat :
+```
+gcloud compute ssl-certificates describe lb-serverless-ssl --global
 
 ```
 ```
@@ -299,5 +363,39 @@ gcloud compute forwarding-rules create lb-serverless-https-rule \
     --global \
     --target-https-proxy=lb-serverless-https-proxy \
     --ports=443 \
-    --address=$LB_IP
+    --address=35.186.208.46
+```
+
+```
+curl http://orealyz.fr
+curl https://orealyz.fr
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TP Serverless</title>
+</head>
+<body>
+    <h1>Mon site Serverless</h1>
+    <button id="helloBtn">Bonjourrrrrrrrrrrrrrrrrrrr</button>
+    <p id="response"></p>
+    <script src="app.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TP Serverless</title>
+</head>
+<body>
+    <h1>Mon site Serverless</h1>
+    <button id="helloBtn">Bonjourrrrrrrrrrrrrrrrrrrr</button>
+    <p id="response"></p>
+    <script src="app.js"></script>
+</body>
+</html>
+
+curl https://orealyz.fr/hello
+{"message":"Hello from Cloud Run!"}
+
 ```
