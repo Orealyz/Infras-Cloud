@@ -76,4 +76,3 @@ jobs:
           --api=$API_NAME \
           --api-config=${API_NAME}-config \
           --project=$GCP_PROJECT \
-          --region=$GCP_REGION
