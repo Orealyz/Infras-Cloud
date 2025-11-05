@@ -1,0 +1,70 @@
+name: Deploy Serverless App on GCP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      STATIC_BUCKET: ${{ secrets.STATIC_BUCKET }} # nom du bucket pour le site statique
+      API_NAME: flask-api
+      GATEWAY_NAME: flask-api-gateway
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # --- Authentification GCP ---
+    - name: Setup GCP
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        service_account_key: ${{ env.GCP_SA_KEY }}
+        project_id: ${{ env.GCP_PROJECT }}
+        export_default_credentials: true
+
+    # --- Build et push l'image Docker de l'API ---
+    - name: Build and push Docker image
+      run: |
+        echo "Building Docker image..."
+        docker build -t gcr.io/$GCP_PROJECT/$API_NAME:latest ./api
+        echo "Pushing Docker image..."
+        docker push gcr.io/$GCP_PROJECT/$API_NAME:latest
+
+    # --- Déployer l'API sur Cloud Run ---
+    - name: Deploy API to Cloud Run
+      run: |
+        gcloud run deploy $API_NAME \
+          --image gcr.io/$GCP_PROJECT/$API_NAME:latest \
+          --platform managed \
+          --region $GCP_REGION \
+          --allow-unauthenticated
+
+    # --- Déployer le site statique sur Cloud Storage ---
+    - name: Deploy static site
+      run: |
+        echo "Syncing static site to bucket..."
+        gsutil -m rsync -r ./site gs://$STATIC_BUCKET
+        echo "Site deployed!"
+
+    # --- Déployer l'API Gateway ---
+    - name: Deploy API Gateway
+      run: |
+        echo "Creating API config..."
+        gcloud api-gateway api-configs create ${API_NAME}-config \
+          --api=$API_NAME \
+          --openapi-spec=api.yaml \
+          --project=$GCP_PROJECT \
+          --quiet || echo "API config already exists, updating..."
+        echo "Updating gateway..."
+        gcloud api-gateway gateways update $GATEWAY_NAME \
+          --api=$API_NAME \
+          --api-config=${API_NAME}-config \
+          --project=$GCP_PROJECT \
+          --region=$GCP_REGION
