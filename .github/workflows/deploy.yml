@@ -13,7 +13,7 @@ jobs:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
       GCP_REGION: ${{ secrets.GCP_REGION }}
       STATIC_BUCKET: ${{ secrets.STATIC_BUCKET }}
-      API_NAME: flask-api
+      API_NAME: flask-api-gateway
       GATEWAY_NAME: flask-api-gateway
 
     steps:
