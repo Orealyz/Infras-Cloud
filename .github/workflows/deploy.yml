@@ -54,12 +54,12 @@ jobs:
           --platform managed \
           --region $GCP_REGION \
           --allow-unauthenticated
-          
+
     # --- Déployer le site statique sur Cloud Storage ---
     - name: Deploy static site
       run: |
         echo "Syncing static site to bucket..."
-        gsutil -m rsync -r ./tp-serverless/index.html ./tp-serverless/app.js gs://$STATIC_BUCKET
+        gsutil -m rsync -r ./tp-serverless/index.html gs://$STATIC_BUCKET
         echo "Site deployed!"
 
     # --- Déployer l'API Gateway ---
