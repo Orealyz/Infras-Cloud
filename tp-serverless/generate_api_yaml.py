@@ -15,8 +15,9 @@ for node in ast.walk(tree):
     if isinstance(node, ast.FunctionDef):
         for deco in node.decorator_list:
             if isinstance(deco, ast.Call) and getattr(deco.func, "attr", "") == "route":
-                path = deco.args[0].s  # Chemin de la route
-                methods = [kw.value.elts[0].s for kw in deco.keywords if kw.arg == "methods"] if deco.keywords else ["GET"]
+                # Compatible Python 3.12+
+                path = deco.args[0].value  # Chemin de la route
+                methods = [kw.value.elts[0].value for kw in deco.keywords if kw.arg == "methods"] if deco.keywords else ["GET"]
                 routes.append({
                     "path": path,
                     "methods": methods,
