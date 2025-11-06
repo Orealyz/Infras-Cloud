@@ -1,14 +1,6 @@
-name: Deploy Serverless App on GCP
-
-on:
-  push:
-    branches:
-      - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
       GCP_REGION: ${{ secrets.GCP_REGION }}
@@ -20,7 +12,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    # --- Authentification GCP ---
     - name: Authenticate to GCP
       uses: google-github-actions/auth@v1
       with:
@@ -32,19 +23,16 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT }}
         version: 'latest'
 
-    # --- Authentifier Docker à GCP ---
     - name: Configure Docker auth for GCP
       run: |
         gcloud auth configure-docker gcr.io --quiet
         gcloud auth configure-docker $GCP_REGION-docker.pkg.dev --quiet || true
 
-    # --- Build et push l'image Docker de l'API ---
     - name: Build and push Docker image
       run: |
         docker build -t gcr.io/$GCP_PROJECT/$API_NAME:latest ./tp-serverless/
         docker push gcr.io/$GCP_PROJECT/$API_NAME:latest
 
-    # --- Déployer l'API sur Cloud Run ---
     - name: Deploy API to Cloud Run
       run: |
         gcloud run deploy $API_NAME \
@@ -53,18 +41,13 @@ jobs:
           --region $GCP_REGION \
           --allow-unauthenticated
 
-    # --- Déployer le site statique sur Cloud Storage ---
-    - name: Deploy static site
-      run: |
-        gsutil -m rsync -r ./tp-serverless/ gs://$STATIC_BUCKET
-
-    # --- Génération automatique d'API YAML depuis main.py ---
+    # --- 🔥 Étape déplacée ici ---
     - name: Generate API YAML from Flask app
       run: |
         cd tp-serverless
         python3 generate_api_yaml.py
+    # --- 🔥 ---
 
-    # --- Déployer l'API Gateway avec un nom unique de config ---
     - name: Deploy API Gateway
       run: |
         COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -83,3 +66,7 @@ jobs:
           --api-config=$CONFIG_NAME \
           --project=$GCP_PROJECT \
           --location=$GCP_REGION
+
+    - name: Deploy static site
+      run: |
+        gsutil -m rsync -r ./tp-serverless/ gs://$STATIC_BUCKET
