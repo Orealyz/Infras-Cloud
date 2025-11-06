@@ -1,85 +1,78 @@
-name: Deploy Serverless App on GCP
+# name: Deploy Serverless App on GCP
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
 
-    env:
-      GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-      GCP_REGION: ${{ secrets.GCP_REGION }}
-      STATIC_BUCKET: ${{ secrets.STATIC_BUCKET }}
-      API_NAME: flask-api-gateway
-      GATEWAY_NAME: flask-api-gateway
+#     env:
+#       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+#       GCP_REGION: ${{ secrets.GCP_REGION }}
+#       STATIC_BUCKET: ${{ secrets.STATIC_BUCKET }}
+#       API_NAME: flask-api-gateway
+#       GATEWAY_NAME: flask-api-gateway
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v3
 
-    # --- Authentification GCP ---
-    - name: Authenticate to GCP
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+#     - name: Authenticate to GCP
+#       uses: google-github-actions/auth@v1
+#       with:
+#         credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Setup gcloud CLI
-      uses: google-github-actions/setup-gcloud@v1
-      with:
-        project_id: ${{ secrets.GCP_PROJECT }}
-        version: 'latest'
+#     - name: Setup gcloud CLI
+#       uses: google-github-actions/setup-gcloud@v1
+#       with:
+#         project_id: ${{ secrets.GCP_PROJECT }}
+#         version: 'latest'
 
-    # --- Authentifier Docker à GCP ---
-    - name: Configure Docker auth for GCP
-      run: |
-        gcloud auth configure-docker gcr.io --quiet
-        gcloud auth configure-docker $GCP_REGION-docker.pkg.dev --quiet || true
+#     - name: Configure Docker auth for GCP
+#       run: |
+#         gcloud auth configure-docker gcr.io --quiet
+#         gcloud auth configure-docker $GCP_REGION-docker.pkg.dev --quiet || true
 
-    # --- Build et push l'image Docker de l'API ---
-    - name: Build and push Docker image
-      run: |
-        docker build -t gcr.io/$GCP_PROJECT/$API_NAME:latest ./tp-serverless/
-        docker push gcr.io/$GCP_PROJECT/$API_NAME:latest
+#     - name: Build and push Docker image
+#       run: |
+#         docker build -t gcr.io/$GCP_PROJECT/$API_NAME:latest ./tp-serverless/
+#         docker push gcr.io/$GCP_PROJECT/$API_NAME:latest
 
-    # --- Déployer l'API sur Cloud Run ---
-    - name: Deploy API to Cloud Run
-      run: |
-        gcloud run deploy $API_NAME \
-          --image gcr.io/$GCP_PROJECT/$API_NAME:latest \
-          --platform managed \
-          --region $GCP_REGION \
-          --allow-unauthenticated
+#     - name: Deploy API to Cloud Run
+#       run: |
+#         gcloud run deploy $API_NAME \
+#           --image gcr.io/$GCP_PROJECT/$API_NAME:latest \
+#           --platform managed \
+#           --region $GCP_REGION \
+#           --allow-unauthenticated
 
 
-    # --- Génération automatique d'API YAML depuis main.py ---
-    - name: Generate API YAML from Flask app
-      run: |
-        cd tp-serverless
-        python3 generate_api_yaml.py
+#     - name: Generate API YAML from Flask app
+#       run: |
+#         cd tp-serverless
+#         python3 generate_api_yaml.py
 
-    # --- Déployer l'API Gateway avec un nom unique de config ---
-    - name: Deploy API Gateway
-      run: |
-        COMMIT_HASH=$(git rev-parse --short HEAD)
-        CONFIG_NAME="flask-api-gateway-config-${COMMIT_HASH}"
+#     - name: Deploy API Gateway
+#       run: |
+#         COMMIT_HASH=$(git rev-parse --short HEAD)
+#         CONFIG_NAME="flask-api-gateway-config-${COMMIT_HASH}"
 
-        echo "Creating new API config: $CONFIG_NAME"
-        gcloud api-gateway api-configs create $CONFIG_NAME \
-          --api=$API_NAME \
-          --openapi-spec=./tp-serverless/api.yaml \
-          --project=$GCP_PROJECT \
-          --quiet || echo "Config $CONFIG_NAME already exists, skipping creation"
+#         echo "Creating new API config: $CONFIG_NAME"
+#         gcloud api-gateway api-configs create $CONFIG_NAME \
+#           --api=$API_NAME \
+#           --openapi-spec=./tp-serverless/api.yaml \
+#           --project=$GCP_PROJECT \
+#           --quiet || echo "Config $CONFIG_NAME already exists, skipping creation"
 
-        echo "Updating gateway $GATEWAY_NAME to use $CONFIG_NAME"
-        gcloud api-gateway gateways update $GATEWAY_NAME \
-          --api=$API_NAME \
-          --api-config=$CONFIG_NAME \
-          --project=$GCP_PROJECT \
-          --location=$GCP_REGION
-    # --- Déployer le site statique sur Cloud Storage ---
-    - name: Deploy static site
-      run: |
-        gsutil -m rsync -r ./tp-serverless/ gs://$STATIC_BUCKET
+#         echo "Updating gateway $GATEWAY_NAME to use $CONFIG_NAME"
+#         gcloud api-gateway gateways update $GATEWAY_NAME \
+#           --api=$API_NAME \
+#           --api-config=$CONFIG_NAME \
+#           --project=$GCP_PROJECT \
+#           --location=$GCP_REGION
+#     - name: Deploy static site
+#       run: |
+#         gsutil -m rsync -r ./tp-serverless/ gs://$STATIC_BUCKET

@@ -1,0 +1,24 @@
+{
+  "bindings": [
+    {
+      "members": [
+        "projectEditor:my-iam-lab-martin",
+        "projectOwner:my-iam-lab-martin"
+      ],
+      "role": "roles/storage.legacyBucketOwner"
+    },
+    {
+      "members": [
+        "projectViewer:my-iam-lab-martin"
+      ],
+      "role": "roles/storage.legacyBucketReader"
+    },
+    {
+      "members": [
+        "user:Collaborateur@gmail.com"
+      ],
+      "role": "roles/storage.objectViewer"
+    }
+  ],
+  "etag": "CAc="
+}

@@ -1,0 +1,10 @@
+title: "CloudRun Deployer"
+description: "Rôle personnalisé pour gérer les services Cloud Run"
+stage: "GA"
+includedPermissions:
+  - run.services.create
+  - run.services.get
+  - run.services.list
+  - run.services.delete
+  - iam.serviceAccounts.actAs
+  - artifactregistry.repositories.downloadArtifacts
