@@ -88,5 +88,7 @@ for r in routes:
 
 with open("api.yaml", "w") as f:
     yaml.safe_dump(swagger, f, sort_keys=False)
+    print(open("api.yaml").read())
+
 
 print("✅ api.yaml généré automatiquement à partir de main.py")

@@ -29,6 +29,10 @@ def test_route():
     response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return response
+@app.route('/test2', methods=['GET'])
+def test():
+    return jsonify({"message": "Test OK"})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
