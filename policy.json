@@ -1,0 +1,86 @@
+{
+  "bindings": [
+    {
+      "members": [
+        "user:menfougg@gmail.com"
+      ],
+      "role": "projects/my-iam-lab-martin/roles/cloudrunDeployer"
+    },
+    {
+      "members": [
+        "serviceAccount:service-1081251897493@gcp-sa-artifactregistry.iam.gserviceaccount.com"
+      ],
+      "role": "roles/artifactregistry.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:service-1081251897493@containerregistry.iam.gserviceaccount.com"
+      ],
+      "role": "roles/containerregistry.ServiceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:1081251897493-compute@developer.gserviceaccount.com",
+        "user:Collaborateur@gmail.com"
+      ],
+      "role": "roles/editor"
+    },
+    {
+      "members": [
+        "user:reguememartin@gmail.com"
+      ],
+      "role": "roles/iam.serviceAccountTokenCreator"
+    },
+    {
+      "members": [
+        "user:reguememartin@gmail.com"
+      ],
+      "role": "roles/owner"
+    },
+    {
+      "members": [
+        "serviceAccount:service-1081251897493@gcp-sa-pubsub.iam.gserviceaccount.com"
+      ],
+      "role": "roles/pubsub.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:service-1081251897493@serverless-robot-prod.iam.gserviceaccount.com"
+      ],
+      "role": "roles/run.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:app-backend@my-iam-lab-martin.iam.gserviceaccount.com"
+      ],
+      "role": "roles/storage.admin"
+    },
+    {
+      "members": [
+        "serviceAccount:app-backend@my-iam-lab-martin.iam.gserviceaccount.com"
+      ],
+      "role": "roles/storage.objectViewer"
+    },
+    {
+      "members": [
+        "user:lecteur@gmail.com",
+        "user:orealyzgaming@gmail.com"
+      ],
+      "role": "roles/viewer"
+    },
+    {
+      "members": [
+        "user:reguememartin@gmail.com"
+      ],
+      "role": "roles/run.admin",
+      "condition": {
+        "title": "AccesTempCloudRun",
+        "description": "Acces temporaire 4h pour test",
+        "expression": "request.time < timestamp(\"2025-11-06T19:06:00Z\")"
+      }
+    }
+  ],
+  "etag": "BwZC7Xc_hqI=",
+  "version": 1
+}
+
