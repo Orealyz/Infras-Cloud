@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  namespace: shop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: db
+        image: postgres:16
+        env:
+        - name: POSTGRES_PASSWORD
+          value: "example"
+        - name: POSTGRES_DB
+          value: "shop"
+        ports:
+        - containerPort: 5432

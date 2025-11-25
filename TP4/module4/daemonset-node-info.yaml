@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-info
+  labels:
+    app: node-info
+spec:
+  selector:
+    matchLabels:
+      app: node-info
+  template:
+    metadata:
+      labels:
+        app: node-info
+    spec:
+      containers:
+      - name: node-info
+        image: busybox:1.36
+        command: ["sh", "-c", "while true; do echo Hello from $(hostname); sleep 30; done"]
